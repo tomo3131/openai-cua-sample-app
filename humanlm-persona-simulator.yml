@@ -1,0 +1,194 @@
+app:
+  description: 'HumanLM論文に基づくペルソナシミュレーター。ユーザープロファイルとコンテンツを入力すると、心理状態（stance/emotion/communication）を推論し、そのペルソナがどう反応するかをシミュレーションする。'
+  icon: "\U0001F9E0"
+  icon_background: '#E4FBCC'
+  mode: workflow
+  name: "HumanLM \u30DA\u30EB\u30BD\u30CA\u30B7\u30DF\u30E5\u30EC\u30FC\u30BF\u30FC"
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.5
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      image:
+        enabled: false
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: llm
+      id: start-to-state-analysis
+      source: start
+      sourceHandle: source
+      target: llm-state
+      targetHandle: target
+      type: custom
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: llm
+      id: state-to-response
+      source: llm-state
+      sourceHandle: source
+      target: llm-response
+      targetHandle: target
+      type: custom
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: end
+      id: response-to-end
+      source: llm-response
+      sourceHandle: source
+      target: end
+      targetHandle: target
+      type: custom
+    nodes:
+    - data:
+        desc: "\u30DA\u30EB\u30BD\u30CA\u30D7\u30ED\u30D5\u30A1\u30A4\u30EB\u3068\u8A55\u4FA1\u5BFE\u8C61\u30B3\u30F3\u30C6\u30F3\u30C4\u3092\u5165\u529B"
+        title: Start
+        type: start
+        variables:
+        - label: "\u30DA\u30EB\u30BD\u30CA\u30D7\u30ED\u30D5\u30A1\u30A4\u30EB"
+          max_length: 3000
+          required: true
+          type: paragraph
+          variable: persona
+        - label: "\u8A55\u4FA1\u5BFE\u8C61\u30B3\u30F3\u30C6\u30F3\u30C4"
+          max_length: 10000
+          required: true
+          type: paragraph
+          variable: content
+        - label: "\u30B3\u30F3\u30C6\u30AD\u30B9\u30C8\uFF08LP / \u30D6\u30ED\u30B0 / \u5E83\u544A\u30B3\u30D4\u30FC / CTA\u7B49\uFF09"
+          max_length: 500
+          required: true
+          type: paragraph
+          variable: context_type
+      height: 200
+      id: start
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: "HumanLM\u306EState Dimensions\u5206\u6790"
+        model:
+          completion_params:
+            temperature: 0.4
+          mode: chat
+          name: claude-sonnet-4-20250514
+          provider: anthropic
+        prompt_template:
+        - edition_type: basic
+          role: system
+          text: "あなたはHumanLMフレームワークに基づくユーザー心理状態分析エンジンです。\n与えられたペルソナプロファイルとコンテンツに対して、以下の3つのState Dimensionsを推論してください。\n\n## State Dimensions\n\n### 1. Stance（態度・立場）\nこのペルソナがこのコンテンツに対してどのような態度を取るか。\n- 同意 / 懐疑 / 反対 / 無関心 / 興味\n- その態度の根拠（プロファイルのどの属性から推論したか）\n\n### 2. Emotion（感情状態）\nこのコンテンツを読んだ時にどのような感情が生じるか。\n- 主要感情（例：共感、不安、期待、苛立ち、安心）\n- 感情の強度（1-5）\n- 感情のトリガー（コンテンツのどの部分が引き金か）\n\n### 3. Communication Style（反応スタイル）\nこのペルソナがこの文脈でどのようなコミュニケーションを取るか。\n- 論理的 / 感情的 / 批判的 / 受容的 / 行動志向\n- 意思決定パターン（即断 / 熟慮 / 他者相談 / データ重視）\n\n## 出力フォーマット\n\nJSON形式で出力してください：\n\n```json\n{\n  \"stance\": {\n    \"position\": \"...\",\n    \"confidence\": 0.0-1.0,\n    \"reasoning\": \"...\"\n  },\n  \"emotion\": {\n    \"primary\": \"...\",\n    \"secondary\": \"...\",\n    \"intensity\": 1-5,\n    \"triggers\": [\"...\"]\n  },\n  \"communication\": {\n    \"style\": \"...\",\n    \"decision_pattern\": \"...\",\n    \"action_likelihood\": 0.0-1.0\n  },\n  \"latent_state_summary\": \"この人物は〜という状態にある\"\n}\n```"
+        - edition_type: basic
+          role: user
+          text: "## ペルソナプロファイル\n{{#start.persona#}}\n\n## 評価対象コンテンツ（種別: {{#start.context_type#}}）\n{{#start.content#}}"
+        title: State Dimensions 分析
+        type: llm
+        vision:
+          enabled: false
+      height: 98
+      id: llm-state
+      position:
+        x: 400
+        y: 282
+      positionAbsolute:
+        x: 400
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: "推論した心理状態からリアルな反応と改善提案を生成"
+        model:
+          completion_params:
+            temperature: 0.6
+          mode: chat
+          name: claude-sonnet-4-20250514
+          provider: anthropic
+        prompt_template:
+        - edition_type: basic
+          role: system
+          text: "あなたはHumanLMフレームワークに基づくペルソナ反応シミュレーターです。\n前段のState Dimensions分析結果を受け取り、そのペルソナが実際にどう反応するかをシミュレーションします。\n\n## 出力内容\n\n### 1. シミュレーション反応\nこのペルソナがこのコンテンツを見た時の内心の声をリアルに再現してください。\n- 一人称視点で、そのペルソナになりきって反応を記述\n- State Dimensionsの分析結果と整合させること\n- 表面的な感想ではなく、心理状態に基づいた深い反応\n\n### 2. 行動予測\nこのペルソナがこのコンテンツを見た後に取る行動を予測：\n- 問い合わせする / しない（確率と根拠）\n- 離脱ポイント（どこで離脱しそうか）\n- 再訪可能性\n- 他者への共有可能性\n\n### 3. 改善提案\nこのペルソナの心理状態に基づいた、コンテンツ改善の具体的提案：\n- State Dimensionsのどの要素にアプローチするか\n- 具体的な修正案（コピー、構成、CTA等）\n- 期待される心理状態の変化\n\n日本語で出力してください。"
+        - edition_type: basic
+          role: user
+          text: "## State Dimensions 分析結果\n{{#llm-state.text#}}\n\n## 元のペルソナプロファイル\n{{#start.persona#}}\n\n## 元のコンテンツ（種別: {{#start.context_type#}}）\n{{#start.content#}}"
+        title: ペルソナ反応シミュレーション
+        type: llm
+        vision:
+          enabled: false
+      height: 98
+      id: llm-response
+      position:
+        x: 720
+        y: 282
+      positionAbsolute:
+        x: 720
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - llm-state
+          - text
+          variable: state_dimensions
+        - value_selector:
+          - llm-response
+          - text
+          variable: simulation_result
+        title: End
+        type: end
+      height: 90
+      id: end
+      position:
+        x: 1040
+        y: 282
+      positionAbsolute:
+        x: 1040
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 1
